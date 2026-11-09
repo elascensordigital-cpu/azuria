@@ -368,9 +368,19 @@ function randomInt(max){
   return x%max;
 }
 
+const IMAGE_VERSION = "20261109-2";
 function imageCandidates(path){
-  // Rutas exactas de las carpetas y archivos WebP proporcionados.
-  return [path];
+  // La primera ruta coincide exactamente con las carpetas y archivos facilitados.
+  // Alternativas solo para repositorios que conservan nombres de carpetas antiguos.
+  const [folder, file] = path.split("/");
+  const folders = {
+    "ARCANOS MAYORES": ["ARCANOS MAYORES", "Arcanos Mayores", "Arcanos_Mayores"],
+    "BASTOS": ["BASTOS", "Bastos"],
+    "COPAS": ["COPAS", "Copas", "02_Copas"],
+    "ESPADAS": ["ESPADAS", "Espadas"],
+    "OROS": ["OROS", "Oros"]
+  };
+  return [...new Set((folders[folder] || [folder]).map(f => f + "/" + file))];
 }
 
 function loadCardImage(img,path,error){
@@ -380,17 +390,16 @@ function loadCardImage(img,path,error){
   img.onerror=()=>{
     pos++;
     if(pos<candidates.length){
-      img.src=encodeURI(candidates[pos]);
+      img.src=encodeURI(candidates[pos]) + "?v=" + IMAGE_VERSION;
       return;
     }
     img.style.display="none";
     error.hidden=false;
     error.textContent=
-      "Imagen no encontrada: "+path+
-      ". Comprueba el nombre de la carpeta y que esté junto a index.html.";
+      "No se pudo cargar: " + path + ". Verifica que la carpeta y el archivo estén publicados en GitHub (respetando mayúsculas y minúsculas).";
   };
 
-  img.src=encodeURI(candidates[0]);
+  img.src=encodeURI(candidates[0]) + "?v=" + IMAGE_VERSION;
 }
 
 function draw(n){
@@ -451,7 +460,8 @@ if("serviceWorker" in navigator){
   window.addEventListener("load",()=>{
     navigator.serviceWorker
       .register("./service-worker.js",{scope:"./"})
-      .then(()=>{
+      .then(registration=>{
+        registration.update();
         console.log("Azuria: Service Worker registrado");
       })
       .catch(error=>{
